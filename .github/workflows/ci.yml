@@ -1,0 +1,94 @@
+name: Service CI/CD
+
+# Generic workflow template for any microservice repository
+# Place this file in: <service-name>/.github/workflows/ci.yml
+# Update the IMAGE_NAME env variable to match your service name
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REGISTRY: 158670175038.dkr.ecr.ap-southeast-1.amazonaws.com
+  ECR_REPOSITORY: docker
+  IMAGE_NAME: notification  # Update this to match your service name (e.g., task, project, user, notification)
+
+permissions:
+  id-token: write   # Required for OIDC authentication
+  contents: read    # Required to checkout code
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: Build and Push Docker Image
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Debug - Check AWS_ROLE_ARN variable
+        run: |
+          echo "AWS_ROLE_ARN value: ${{ vars.AWS_ROLE_ARN }}"
+          if [ -z "${{ vars.AWS_ROLE_ARN }}" ]; then
+            echo "⚠️  WARNING: AWS_ROLE_ARN variable is not set!"
+            echo "Please add it as a repository variable:"
+            echo "Repository → Settings → Secrets and variables → Actions → Variables"
+            echo "Name: AWS_ROLE_ARN"
+            echo "Value: arn:aws:iam::158670175038:role/registry-github-actions-role"
+            exit 1
+          fi
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Set image tag
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/v') }}" == "true" ]]; then
+            IMAGE_TAG=${GITHUB_REF#refs/tags/v}
+          else
+            IMAGE_TAG=${GITHUB_SHA::8}
+          fi
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_latest=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-latest" >> $GITHUB_OUTPUT
+      
+      - name: Build Docker image
+        env:
+          IMAGE_NAME: ${{ steps.meta.outputs.image }}
+        run: |
+          echo "Building Docker image: $IMAGE_NAME"
+          docker build -t $IMAGE_NAME -f Dockerfile .
+          docker tag $IMAGE_NAME ${{ steps.meta.outputs.image_latest }}
+      
+      - name: Push Docker image to ECR
+        env:
+          IMAGE_NAME: ${{ steps.meta.outputs.image }}
+          IMAGE_LATEST: ${{ steps.meta.outputs.image_latest }}
+        run: |
+          echo "Pushing Docker image: $IMAGE_NAME"
+          docker push $IMAGE_NAME
+          docker push $IMAGE_LATEST
+      
+      - name: Image details
+        run: |
+          echo "✅ Successfully pushed image:"
+          echo "  Image: ${{ steps.meta.outputs.image }}"
+          echo "  Latest: ${{ steps.meta.outputs.image_latest }}"
+          echo ""
+          echo "Use in Kubernetes:"
+          echo "  image: ${{ steps.meta.outputs.image_latest }}"
+
