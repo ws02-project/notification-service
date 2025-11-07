@@ -32,6 +32,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+<<<<<<< HEAD
+=======
+      - name: Checkout proto repository
+        uses: actions/checkout@v4
+        with:
+          repository: ws02-project/proto
+          path: proto
+          token: ${{ secrets.PAT_TOKEN }}
+      
+      - name: Copy proto files to service directory
+        run: |
+          echo "📋 Ensuring proto files are in service directory..."
+          # Proto is checked out to 'proto' directory at workspace root
+          # We need to ensure it's available in the build context
+          if [ -d "proto" ] && [ "$(ls -A proto 2>/dev/null)" ]; then
+            echo "✅ Proto files found at workspace root"
+            ls -la proto/
+          else
+            echo "⚠️  Proto directory not found or empty"
+            mkdir -p proto
+          fi
+      
+>>>>>>> 90c9fda (Enhance CI workflow to include proto repository checkout and file validation)
       - name: Debug - Check AWS_ROLE_ARN variable
         run: |
           echo "AWS_ROLE_ARN value: ${{ vars.AWS_ROLE_ARN }}"
