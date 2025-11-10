@@ -19,10 +19,8 @@ env:
   IMAGE_NAME: notification  # Update this to match your service name (e.g., task, project, user, notification)
 
 permissions:
-  id-token: write   # Required for OIDC authentication
-  contents: read    # Required to checkout code
-  security-events: write # Required to upload Trivy scan results to GitHub Security
-  actions: read # Required for CodeQL action to access workflow run info
+  id-token: write # Required for OIDC authentication
+  contents: read # Required to checkout code
 
 jobs:
   build-and-push:
