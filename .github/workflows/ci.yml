@@ -21,6 +21,8 @@ env:
 permissions:
   id-token: write   # Required for OIDC authentication
   contents: read    # Required to checkout code
+  security-events: write # Required to upload Trivy scan results to GitHub Security
+  actions: read # Required for CodeQL action to access workflow run info
 
 jobs:
   build-and-push:
@@ -86,6 +88,15 @@ jobs:
           echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "image_latest=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-latest" >> $GITHUB_OUTPUT
       
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'  # Don't fail on filesystem scan, just report
+
       - name: Build Docker image
         env:
           IMAGE_NAME: ${{ steps.meta.outputs.image }}
@@ -93,6 +104,27 @@ jobs:
           echo "Building Docker image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME -f Dockerfile .
           docker tag $IMAGE_NAME ${{ steps.meta.outputs.image_latest }}
+          # Also tag with a simple local name for Trivy scanning
+          docker tag $IMAGE_NAME notification-service:scan
+
+      - name: Run Trivy image scan (Table output - Show all vulnerabilities)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true # Show results even if vulnerabilities found
+        with:
+          scan-type: 'image'
+          image-ref: 'notification-service:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          exit-code: '0' # Don't fail here, just show results
+
+      - name: Run Trivy image scan (Fail on CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'notification-service:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'  # Fail pipeline if CRITICAL or HIGH vulnerabilities found
       
       - name: Push Docker image to ECR
         env:

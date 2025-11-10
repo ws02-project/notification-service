@@ -1,0 +1,46 @@
+# Trivy Configuration for Notification Service
+# Documentation: https://aquasecurity.github.io/trivy/latest/docs/configuration/
+
+# Scan settings
+scan:
+  # Skip scanning these directories
+  skip-dirs:
+    - node_modules/.cache
+    - .git
+    - dist
+    - coverage
+  
+  # Skip scanning these files
+  skip-files:
+    - "**/*.test.ts"
+    - "**/*.spec.ts"
+
+# Vulnerability settings
+vulnerability:
+  # Vulnerability types to detect
+  type:
+    - os
+    - library
+  
+  # Ignore unfixed vulnerabilities (vulnerabilities with no available fix)
+  ignore-unfixed: false
+
+# Secret scanning settings
+secret:
+  # Enable secret scanning
+  config: trivy-secret.yaml
+
+# Output settings
+format: table
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+  - LOW
+
+# Database settings
+db:
+  # Skip database update (useful for offline environments)
+  skip-update: false
+
+

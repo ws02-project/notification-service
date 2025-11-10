@@ -1,0 +1,11 @@
+# Trivy Ignore File for Notification Service
+# Add CVEs that are false positives or not applicable to this service
+# Format: CVE-YYYY-NNNNN [exp:YYYY-MM-DD] [# comment]
+
+# Example: Ignore a specific CVE with expiration date
+# CVE-2021-12345 exp:2024-12-31 # False positive - not applicable to our use case
+
+# Example: Ignore a CVE permanently (use with caution)
+# CVE-2021-67890 # Accepted risk - mitigated by other controls
+
+
