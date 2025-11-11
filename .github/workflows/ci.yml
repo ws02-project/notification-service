@@ -11,6 +11,8 @@ on:
       - 'v*'
   pull_request:
     branches: [ main, master ]
+  repository_dispatch:
+    types: [proto-updated]  # Triggered when proto repository changes
 
 env:
   AWS_REGION: ap-southeast-1
@@ -26,9 +28,25 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     name: Build and Push Docker Image
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || github.event_name == 'repository_dispatch'
     
     steps:
+      - name: Display trigger information
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          echo "## 🔄 Triggered by Proto Repository Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Proto Commit:** \`${{ github.event.client_payload.proto_commit_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Message:** ${{ github.event.client_payload.proto_commit_message }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ github.event.client_payload.changed_files }}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Changed Files:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "${{ github.event.client_payload.changed_files }}" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "🔄 Rebuilding service due to proto file changes..."
+
       - name: Checkout code
         uses: actions/checkout@v4
       
