@@ -88,6 +88,11 @@
     "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "glob@>=10.0.0 <10.5.0": ">=10.5.0"
+    }
   }
 }
 
