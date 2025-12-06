@@ -48,10 +48,10 @@ jobs:
           echo "🔄 Rebuilding service due to proto file changes..."
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Checkout proto repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ws02-project/proto
           path: proto
