@@ -7,11 +7,11 @@ RUN apk add --no-cache git && \
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files and lockfile
+COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies (skip prepare script for Docker builds)
-RUN pnpm install --ignore-scripts
+# Install dependencies using frozen lockfile (skip prepare script for Docker builds)
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy source code
 COPY . .
@@ -30,11 +30,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files and lockfile
+COPY package.json pnpm-lock.yaml ./
 
-# Install production dependencies only (skip prepare script for Docker builds)
-RUN pnpm install --prod --ignore-scripts
+# Install production dependencies only using frozen lockfile (skip prepare script for Docker builds)
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
