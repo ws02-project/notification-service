@@ -11,8 +11,7 @@
       "description": "Automerge minor and patch updates",
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true
+      "automergeType": "pr"
     },
     {
       "description": "Group all non-major updates together",
