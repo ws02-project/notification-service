@@ -15,7 +15,8 @@ app.use(helmet());
 
 // CORS
 app.use(cors());
-app.options('*', cors());
+// Note: app.use(cors()) already handles OPTIONS requests, so explicit app.options is not needed
+// If explicit OPTIONS handling is required, use app.options('/*', cors()) instead of '*'
 
 // Body parser
 app.use(express.json());
