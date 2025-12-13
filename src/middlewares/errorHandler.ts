@@ -1,41 +1,59 @@
 import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
+import { config } from '../config';
 import logger from '../utils/logger';
-import createApiError from '../utils/ApiError';
+import { ApiError } from '../utils/ApiError';
 
-export const errorConverter = (err: Error, _req: Request, _res: Response, next: NextFunction) => {
+/**
+ * Convert any error to ApiError format
+ */
+export const errorConverter = (
+  err: Error,
+  _req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
   let error = err;
-  if (!(error instanceof Error)) {
-    const statusCode = httpStatus.INTERNAL_SERVER_ERROR;
-    const message = String(error) || httpStatus[statusCode];
-    error = createApiError(statusCode, message);
+
+  if (!(error instanceof ApiError)) {
+    const statusCode =
+      (error as { statusCode?: number }).statusCode || httpStatus.INTERNAL_SERVER_ERROR;
+    const message = error.message || 'Internal Server Error';
+    error = new ApiError(statusCode, message, false, err.stack);
   }
+
   next(error);
 };
 
+/**
+ * Handle errors and send standardized JSON response
+ */
 export const errorHandler = (
-  err: Error & { statusCode?: number; isOperational?: boolean },
+  err: ApiError,
   _req: Request,
   res: Response,
   _next: NextFunction,
 ) => {
   let { statusCode, message } = err;
 
-  if (!statusCode || !err.isOperational) {
+  // In production, hide internal error details
+  if (config.env === 'production' && !err.isOperational) {
     statusCode = httpStatus.INTERNAL_SERVER_ERROR;
-    message = message || 'Internal Server Error';
+    message = 'Internal Server Error';
   }
 
   res.locals.errorMessage = err.message;
 
   const response = {
     success: false,
-    statusCode,
+    code: statusCode,
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(config.env === 'development' && { stack: err.stack }),
   };
 
-  logger.error(err);
+  if (config.env === 'development') {
+    logger.error(err);
+  }
 
-  res.status(statusCode).send(response);
+  res.status(statusCode).json(response);
 };
