@@ -1,38 +1,72 @@
 # Notification Service
 
-Production-ready notification microservice with TypeScript, Express, and RabbitMQ integration.
+Microservice for sending notifications via email with RabbitMQ event consumption and retry mechanisms.
 
-## Features
+## Tech Stack
 
-- 📧 Email notifications using Nodemailer
-- 🐰 RabbitMQ event consumption for task assignments
-- 🚀 Express REST API with health check and test endpoints
-- 🐳 Docker support for development and production
-- 📝 TypeScript with strict type checking
-- ✅ Comprehensive error handling
+| Category | Technology |
+|----------|------------|
+| Runtime | Node.js 24 LTS |
+| Language | TypeScript |
+| Framework | Express.js |
+| Email | Nodemailer |
+| Messaging | RabbitMQ |
+| Validation | Joi |
+| Testing | Jest + Supertest |
 
-## Prerequisites
+## Ports
 
-- Node.js >= 22.0.0
-- pnpm >= 8.0.0
-- Docker and Docker Compose (for containerized development)
-- RabbitMQ (running in Docker or separately)
+| Service | Port |
+|---------|------|
+| HTTP API | 3003 |
+
+## Quick Start
+
+### Docker (Recommended)
+
+```bash
+docker-compose up -d
+```
+
+### Local Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start dev server
+pnpm dev:local
+```
+
+## API Endpoints
+
+### REST API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/health` | Health check |
+| POST | `/api/v1/test-email` | Send test email |
+
+## Events Consumed
+
+| Event | Source | Action |
+|-------|--------|--------|
+| `task.assigned` | Task Service | Send assignment email |
+| `user.created` | User Service | Send welcome email |
+| `project.member.added` | Project Service | Send invite email |
 
 ## Environment Variables
 
-Create a `.env` file in the root directory:
-
 ```env
+# Server
 NODE_ENV=development
-PORT=3002
-API_VERSION=v1
+PORT=3003
 SERVICE_NAME=notification-service
-LOG_LEVEL=info
 
-# RabbitMQ Configuration
-RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672
+# RabbitMQ
+RABBITMQ_URL=amqp://admin:admin123@localhost:5672
 
-# Email Configuration (SMTP)
+# Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -42,95 +76,60 @@ EMAIL_FROM=noreply@example.com
 EMAIL_FROM_NAME=Task Management System
 ```
 
-## Development
-
-### Local Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start development server with hot reload
-pnpm dev:local
-```
-
-### Docker Development
-
-```bash
-# Start with Docker Compose
-pnpm dev
-
-# Or use the script directly
-./scripts/dev.sh
-```
-
-## API Endpoints
-
-### Health Check
-
-```http
-GET /api/v1/health
-```
-
-### Send Test Email
-
-```http
-POST /api/v1/test-email
-Content-Type: application/json
-
-{
-  "to": "recipient@example.com",
-  "subject": "Test Email",
-  "message": "This is a test email"
-}
-```
-
-## Event Handling
-
-The service listens to RabbitMQ events:
-
-- `task.assigned` - Sends email notification when a task is assigned to a user
-
 ## Project Structure
 
 ```
-notification-service/
-├── src/
-│   ├── config/          # Configuration
-│   ├── controllers/    # Request handlers
-│   ├── middlewares/     # Express middlewares
-│   ├── messaging/       # RabbitMQ EventBus
-│   ├── routes/          # API routes
-│   ├── services/        # Business logic
-│   ├── utils/           # Utilities
-│   ├── validations/     # Request validation schemas
-│   ├── app.ts           # Express app
-│   └── server.ts        # Server entry point
-├── scripts/             # Development scripts
-├── Dockerfile           # Production Docker image
-├── Dockerfile.dev       # Development Docker image
-├── docker-compose.yml   # Docker Compose configuration
-└── package.json
+src/
+├── config/           # Configuration
+├── controllers/      # HTTP handlers
+├── services/         # Business logic (email, notification, failureTracking)
+├── routes/           # API routes
+├── validations/      # Joi schemas
+├── messaging/        # RabbitMQ EventBus
+├── middlewares/      # Express middleware
+├── utils/            # Utilities (logger, ApiError, catchAsync, retry)
+└── __tests__/        # Tests (unit + integration)
 ```
 
-## Building for Production
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start with Docker |
+| `pnpm dev:local` | Start locally with hot reload |
+| `pnpm build` | Build TypeScript |
+| `pnpm start` | Start production |
+| `pnpm test` | Run tests |
+| `pnpm lint` | Lint code |
+
+## Features
+
+### Retry Mechanism
+
+Failed email deliveries are automatically retried with exponential backoff:
+- Max retries: 3
+- Backoff: 1s, 2s, 4s
+
+### Failure Tracking
+
+Failed notifications are tracked and can be monitored for:
+- Bounce detection
+- Rate limiting
+- Error patterns
+
+## Testing
 
 ```bash
-# Build TypeScript
-pnpm build
+# Run all tests
+pnpm test
 
-# Start production server
-pnpm start
-```
+# With coverage
+pnpm test:coverage
 
-## Docker Production
-
-```bash
-# Build and run production container
-docker-compose --profile production up notification-service-prod
+# Watch mode
+pnpm test:watch
 ```
 
 ## License
 
 ISC
-

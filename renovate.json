@@ -11,7 +11,8 @@
       "groupName": "all dependencies",
       "groupSlug": "all-deps",
       "automerge": true,
-      "automergeType": "pr"
+      "automergeType": "pr",
+      "automergeSchedule": ["before 3am on monday"]
     },
     {
       "description": "Do not automerge Express - requires manual testing",
@@ -36,10 +37,15 @@
   ],
   "lockFileMaintenance": {
     "enabled": true,
-    "automerge": true
+    "automerge": true,
+    "automergeType": "pr",
+    "schedule": ["before 3am on monday"]
   },
   "vulnerabilityAlerts": {
     "labels": ["security"],
-    "automerge": true
-  }
+    "automerge": true,
+    "automergeType": "pr"
+  },
+  "prConcurrentLimit": 1,
+  "prHourlyLimit": 2
 }

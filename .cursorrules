@@ -29,6 +29,12 @@
    - Make minimal, targeted changes
    - Avoid unnecessary refactoring unless explicitly requested
 
+4. **Update documentation if needed**
+   - If adding new API endpoints, update the README API table
+   - If adding new environment variables, update the README env section
+   - If adding new events consumed, update the README events table
+   - If changing ports or configuration, update relevant sections
+
 ## Before Committing Changes
 
 Always run these checks in order:
@@ -72,4 +78,4 @@ Always run these checks in order:
 - `src/middlewares/` - Express middlewares
 - `src/services/email.service.ts` - Email sending logic
 - `src/services/failureTracking.service.ts` - Failure tracking for retries
-
+- `README.md` - Service documentation
