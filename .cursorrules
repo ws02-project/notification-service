@@ -1,0 +1,67 @@
+# Notification Service - Development Guidelines
+
+## Before Making Code Changes
+
+1. **Understand the existing code** - Read and understand the relevant files before proposing changes
+2. **Check existing tests** - Review related test files to understand testing patterns
+
+## When Making Code Changes
+
+1. **Maintain or increase test coverage**
+   - If adding new functions/methods, add corresponding unit tests
+   - If modifying existing code, update related tests
+   - Ensure tests cover edge cases and error scenarios
+
+2. **Follow existing patterns**
+   - Use the established coding style and conventions
+   - Follow the existing folder structure
+   - Use the same libraries/utilities already in use (e.g., catchAsync, ApiError, validate middleware, retry utility)
+
+3. **Keep changes focused**
+   - Make minimal, targeted changes
+   - Avoid unnecessary refactoring unless explicitly requested
+
+## Before Committing Changes
+
+Always run these checks in order:
+
+1. **Run tests**
+   ```bash
+   pnpm test
+   ```
+   - If tests fail, fix the failing tests or update them to match new behavior
+   - Ensure coverage thresholds are met
+
+2. **Run linting**
+   ```bash
+   pnpm lint
+   ```
+   - Fix any linting errors before committing
+   - Warnings are acceptable but errors must be resolved
+
+3. **Run build**
+   ```bash
+   pnpm build
+   ```
+   - Ensure TypeScript compilation succeeds
+   - Fix any type errors
+
+4. **Only commit if all checks pass**
+
+## Testing Patterns
+
+- Unit tests go in `src/__tests__/unit/`
+- Integration tests go in `src/__tests__/integration/`
+- Mock external dependencies (email service, messaging, nodemailer)
+- Use `jest.mocked()` for type-safe mocks
+- Follow the existing test structure and naming conventions
+
+## Common Files to Check
+
+- `src/__tests__/setup.ts` - Global test setup and mocks
+- `jest.config.js` - Jest configuration and coverage thresholds
+- `src/utils/` - Shared utilities (ApiError, catchAsync, logger, retry)
+- `src/middlewares/` - Express middlewares
+- `src/services/email.service.ts` - Email sending logic
+- `src/services/failureTracking.service.ts` - Failure tracking for retries
+
