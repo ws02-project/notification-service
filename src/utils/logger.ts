@@ -24,7 +24,7 @@ const logger = winston.createLogger({
   defaultMeta: {
     service: config.serviceName,
     version: process.env.APP_VERSION || '1.0.0',
-    environment: config.env,
+    environment: config.environment,
   },
   transports: [
     new winston.transports.Console({

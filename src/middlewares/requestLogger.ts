@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
+// Paths to exclude from request logging
+const EXCLUDED_PATHS = ['/health', '/api/v1/health', '/healthz', '/ready', '/live'];
+
 /**
  * Request logging middleware
  * Logs HTTP requests and responses with correlation IDs for tracing
@@ -18,6 +21,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
   // Set response headers for client correlation
   res.setHeader('x-request-id', requestId);
   res.setHeader('x-trace-id', traceId);
+
+  // Skip logging for health check endpoints
+  if (EXCLUDED_PATHS.includes(req.path)) {
+    return next();
+  }
 
   // Log incoming request
   logger.info('HTTP Request', {
