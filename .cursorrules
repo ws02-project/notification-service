@@ -2,8 +2,16 @@
 
 ## Before Making Code Changes
 
-1. **Understand the existing code** - Read and understand the relevant files before proposing changes
-2. **Check existing tests** - Review related test files to understand testing patterns
+1. **Pull latest changes first**
+   ```bash
+   git pull
+   pnpm install
+   ```
+   - Always sync with remote before starting work
+   - Install any new dependencies
+
+2. **Understand the existing code** - Read and understand the relevant files before proposing changes
+3. **Check existing tests** - Review related test files to understand testing patterns
 
 ## When Making Code Changes
 
