@@ -201,7 +201,33 @@ jobs:
           echo "✅ Successfully pushed image:"
           echo "  Image: ${{ steps.meta.outputs.image }}"
           echo "  Latest: ${{ steps.meta.outputs.image_latest }}"
-          echo ""
-          echo "Use in Kubernetes:"
-          echo "  image: ${{ steps.meta.outputs.image_latest }}"
 
+      - name: Get commit message
+        id: commit
+        run: |
+          # Check if this is a merge commit
+          PARENT_COUNT=$(git cat-file -p HEAD | grep -c "^parent")
+          if [ "$PARENT_COUNT" -gt 1 ]; then
+            # For merge commits, get the title from the merged branch's last commit
+            COMMIT_MSG=$(git log -1 --pretty=%s HEAD^2 2>/dev/null || git log -1 --pretty=%s)
+          else
+            COMMIT_MSG=$(git log -1 --pretty=%s)
+          fi
+          # Truncate long messages
+          COMMIT_MSG=$(echo "$COMMIT_MSG" | head -c 100)
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+
+      - name: Trigger deployment update
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: ws02-project/deployments
+          event-type: update-image
+          client-payload: |-
+            {
+              "service": "notification-service",
+              "image_tag": "${{ steps.meta.outputs.tag }}",
+              "image_full": "${{ steps.meta.outputs.image }}",
+              "commit_sha": "${{ github.sha }}",
+              "commit_message": "${{ steps.commit.outputs.message }}"
+            }
