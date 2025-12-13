@@ -4,16 +4,14 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
-      "description": "Automerge all updates (minor, patch, and major)",
-      "matchUpdateTypes": ["minor", "patch", "major"],
+      "description": "Group all dependencies into a single PR",
+      "matchPackagePatterns": ["*"],
+      "excludePackageNames": ["express", "@types/express"],
+      "excludePackagePatterns": ["^node$"],
+      "groupName": "all dependencies",
+      "groupSlug": "all-deps",
       "automerge": true,
       "automergeType": "pr"
-    },
-    {
-      "description": "Group all non-major updates together",
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-minor-patch"
     },
     {
       "description": "Do not automerge Express - requires manual testing",
