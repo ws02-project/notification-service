@@ -1,10 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":automergeMinor",
-    ":automergePatch"
-  ],
+  "extends": ["config:recommended", ":automergeMinor", ":automergePatch"],
   "labels": ["dependencies"],
   "packageRules": [
     {
@@ -23,6 +19,26 @@
       "description": "Do not automerge major updates",
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "Do not automerge Express - requires manual testing",
+      "matchPackageNames": ["express"],
+      "automerge": false,
+      "labels": ["dependencies", "express", "manual-review"]
+    },
+    {
+      "description": "Do not automerge Node.js - requires compatibility testing",
+      "matchDepTypes": ["engines"],
+      "matchPackageNames": ["node"],
+      "automerge": false,
+      "labels": ["dependencies", "nodejs", "manual-review"]
+    },
+    {
+      "description": "Do not automerge Node.js Docker image updates",
+      "matchDatasources": ["docker"],
+      "matchPackagePatterns": ["^node$", "node:"],
+      "automerge": false,
+      "labels": ["dependencies", "nodejs", "manual-review"]
     }
   ],
   "lockFileMaintenance": {
