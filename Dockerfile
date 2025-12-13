@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Install pnpm and git
 RUN apk add --no-cache git && \
@@ -23,7 +23,7 @@ COPY . .
 RUN pnpm build
 
 # Production stage
-FROM node:22-alpine AS production
+FROM node:24-alpine AS production
 
 # Install pnpm and remove npm (contains vulnerable glob@10.4.5)
 RUN corepack enable && corepack prepare pnpm@latest --activate && \
