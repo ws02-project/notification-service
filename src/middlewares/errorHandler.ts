@@ -7,12 +7,7 @@ import { ApiError } from '../utils/ApiError';
 /**
  * Convert any error to ApiError format
  */
-export const errorConverter = (
-  err: Error,
-  _req: Request,
-  _res: Response,
-  next: NextFunction,
-) => {
+export const errorConverter = (err: Error, _req: Request, _res: Response, next: NextFunction) => {
   let error = err;
 
   if (!(error instanceof ApiError)) {
@@ -28,12 +23,7 @@ export const errorConverter = (
 /**
  * Handle errors and send standardized JSON response
  */
-export const errorHandler = (
-  err: ApiError,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
+export const errorHandler = (err: ApiError, _req: Request, res: Response, _next: NextFunction) => {
   let { statusCode, message } = err;
 
   // In production, hide internal error details

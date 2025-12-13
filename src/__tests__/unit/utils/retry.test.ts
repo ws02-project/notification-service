@@ -25,7 +25,8 @@ describe('Retry Utility', () => {
     });
 
     it('should retry on failure and eventually succeed', async () => {
-      const fn = jest.fn()
+      const fn = jest
+        .fn()
         .mockRejectedValueOnce(new Error('First failure'))
         .mockRejectedValueOnce(new Error('Second failure'))
         .mockResolvedValue('success');
@@ -57,9 +58,7 @@ describe('Retry Utility', () => {
     });
 
     it('should call onRetry callback on each retry', async () => {
-      const fn = jest.fn()
-        .mockRejectedValueOnce(new Error('Failure'))
-        .mockResolvedValue('success');
+      const fn = jest.fn().mockRejectedValueOnce(new Error('Failure')).mockResolvedValue('success');
       const onRetry = jest.fn();
 
       await retry(fn, { maxAttempts: 3, initialDelayMs: 10, onRetry });

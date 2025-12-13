@@ -35,10 +35,12 @@ describe('Notification Controller', () => {
       await notificationController.healthCheck(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(httpStatus.OK);
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'ok',
-        service: 'notification-service',
-      }));
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'ok',
+          service: 'notification-service',
+        }),
+      );
     });
   });
 
@@ -85,4 +87,3 @@ describe('Notification Controller', () => {
     });
   });
 });
-

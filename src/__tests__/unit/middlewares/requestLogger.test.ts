@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { requestLogger, errorLogger } from '../../../middlewares/requestLogger';
+import logger from '../../../utils/logger';
 
 // Mock logger
 jest.mock('../../../utils/logger', () => ({
@@ -13,11 +14,13 @@ jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('mock-uuid-1234'),
 }));
 
+const mockedLogger = jest.mocked(logger);
+
 describe('Request Logger Middleware', () => {
   let mockRes: Partial<Response>;
   let mockNext: NextFunction;
 
-  const createMockReq = (path: string = '/api/v1/tasks'): Partial<Request> => ({
+  const createMockReq = (path: string = '/api/v1/notifications'): Partial<Request> => ({
     method: 'GET',
     path,
     originalUrl: path,
@@ -56,7 +59,7 @@ describe('Request Logger Middleware', () => {
     });
 
     it('should add requestId to request object', () => {
-      const req = createMockReq('/api/v1/tasks');
+      const req = createMockReq('/api/v1/notifications');
 
       requestLogger(req as Request, mockRes as Response, mockNext);
 
@@ -64,7 +67,7 @@ describe('Request Logger Middleware', () => {
     });
 
     it('should add traceId to request object', () => {
-      const req = createMockReq('/api/v1/tasks');
+      const req = createMockReq('/api/v1/notifications');
 
       requestLogger(req as Request, mockRes as Response, mockNext);
 
@@ -72,7 +75,7 @@ describe('Request Logger Middleware', () => {
     });
 
     it('should call next()', () => {
-      const req = createMockReq('/api/v1/tasks');
+      const req = createMockReq('/api/v1/notifications');
 
       requestLogger(req as Request, mockRes as Response, mockNext);
 
@@ -80,7 +83,7 @@ describe('Request Logger Middleware', () => {
     });
 
     it('should register finish event listener on response', () => {
-      const req = createMockReq('/api/v1/tasks');
+      const req = createMockReq('/api/v1/notifications');
 
       requestLogger(req as Request, mockRes as Response, mockNext);
 
@@ -91,15 +94,14 @@ describe('Request Logger Middleware', () => {
   describe('errorLogger', () => {
     it('should log error details', () => {
       const error = new Error('Test error');
-      const logger = require('../../../utils/logger');
-      const req = createMockReq('/api/v1/tasks');
+      const req = createMockReq('/api/v1/notifications');
 
       (req as Request & { requestId: string; traceId: string }).requestId = 'req-123';
       (req as Request & { requestId: string; traceId: string }).traceId = 'trace-123';
 
       errorLogger(error, req as Request, mockRes as Response, mockNext);
 
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(mockedLogger.error).toHaveBeenCalledWith(
         'Unhandled Error',
         expect.objectContaining({
           type: 'unhandled_error',
@@ -110,7 +112,7 @@ describe('Request Logger Middleware', () => {
 
     it('should call next with the error', () => {
       const error = new Error('Test error');
-      const req = createMockReq('/api/v1/tasks');
+      const req = createMockReq('/api/v1/notifications');
 
       errorLogger(error, req as Request, mockRes as Response, mockNext);
 
@@ -119,19 +121,17 @@ describe('Request Logger Middleware', () => {
 
     it('should include request details in log', () => {
       const error = new Error('Test error');
-      const logger = require('../../../utils/logger');
-      const req = { ...createMockReq('/api/v1/tasks'), method: 'POST' };
+      const req = { ...createMockReq('/api/v1/notifications'), method: 'POST' };
 
       errorLogger(error, req as Request, mockRes as Response, mockNext);
 
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(mockedLogger.error).toHaveBeenCalledWith(
         'Unhandled Error',
         expect.objectContaining({
           method: 'POST',
-          path: '/api/v1/tasks',
+          path: '/api/v1/notifications',
         }),
       );
     });
   });
 });
-

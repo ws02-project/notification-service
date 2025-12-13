@@ -65,17 +65,20 @@ describe('Email Service - Extended Tests', () => {
 
       await emailService.sendTestEmail('test@example.com', 'Test Subject', 'Test Message');
 
-      expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
-        to: 'test@example.com',
-        subject: 'Test Subject',
-      }));
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'test@example.com',
+          subject: 'Test Subject',
+        }),
+      );
     });
 
     it('should throw error when sending fails', async () => {
       mockSendMail.mockRejectedValue(new Error('SMTP error'));
 
-      await expect(emailService.sendTestEmail('test@example.com', 'Subject', 'Message'))
-        .rejects.toThrow('SMTP error');
+      await expect(
+        emailService.sendTestEmail('test@example.com', 'Subject', 'Message'),
+      ).rejects.toThrow('SMTP error');
     });
   });
 
@@ -91,10 +94,12 @@ describe('Email Service - Extended Tests', () => {
         assignedBy: 'manager@example.com',
       });
 
-      expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
-        to: 'user@example.com',
-        subject: expect.stringContaining('Complete Feature X'),
-      }));
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'user@example.com',
+          subject: expect.stringContaining('Complete Feature X'),
+        }),
+      );
     });
 
     it('should send email without optional fields', async () => {
@@ -111,10 +116,12 @@ describe('Email Service - Extended Tests', () => {
     it('should throw error when sending fails', async () => {
       mockSendMail.mockRejectedValue(new Error('Connection refused'));
 
-      await expect(emailService.sendTaskAssignmentEmail('user@example.com', {
-        taskId: 'task-123',
-        taskTitle: 'Task',
-      })).rejects.toThrow('Connection refused');
+      await expect(
+        emailService.sendTaskAssignmentEmail('user@example.com', {
+          taskId: 'task-123',
+          taskTitle: 'Task',
+        }),
+      ).rejects.toThrow('Connection refused');
     });
   });
 });

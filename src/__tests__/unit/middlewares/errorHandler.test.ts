@@ -73,11 +73,13 @@ describe('Error Handler Middleware', () => {
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(httpStatus.BAD_REQUEST);
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        code: httpStatus.BAD_REQUEST,
-        message: 'Bad request',
-      }));
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          code: httpStatus.BAD_REQUEST,
+          message: 'Bad request',
+        }),
+      );
     });
 
     it('should return 500 for internal errors', () => {
@@ -94,9 +96,11 @@ describe('Error Handler Middleware', () => {
 
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        stack: expect.any(String),
-      }));
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stack: expect.any(String),
+        }),
+      );
     });
 
     it('should set error message in res.locals', () => {

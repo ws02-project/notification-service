@@ -66,4 +66,3 @@ describe('catchAsync', () => {
     expect(mockRes.json).toHaveBeenCalledWith({ success: true });
   });
 });
-

@@ -52,9 +52,11 @@ describe('Validate Middleware', () => {
     const middleware = validate(schema);
     middleware(mockReq as Request, mockRes as Response, mockNext);
 
-    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-      statusCode: httpStatus.BAD_REQUEST,
-    }));
+    expect(mockNext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: httpStatus.BAD_REQUEST,
+      }),
+    );
   });
 
   it('should fail validation when email is invalid', () => {
@@ -69,9 +71,11 @@ describe('Validate Middleware', () => {
     const middleware = validate(schema);
     middleware(mockReq as Request, mockRes as Response, mockNext);
 
-    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-      statusCode: httpStatus.BAD_REQUEST,
-    }));
+    expect(mockNext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: httpStatus.BAD_REQUEST,
+      }),
+    );
   });
 
   it('should validate query', () => {
@@ -86,9 +90,10 @@ describe('Validate Middleware', () => {
     const middleware = validate(schema);
     middleware(mockReq as Request, mockRes as Response, mockNext);
 
-    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
-      statusCode: httpStatus.BAD_REQUEST,
-    }));
+    expect(mockNext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: httpStatus.BAD_REQUEST,
+      }),
+    );
   });
 });
-

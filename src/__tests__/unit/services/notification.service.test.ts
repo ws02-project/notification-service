@@ -1,3 +1,5 @@
+import logger from '../../../utils/logger';
+
 // Must mock logger first as it's used by notification.service
 jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
@@ -15,6 +17,8 @@ jest.mock('../../../services/email.service', () => ({
 
 import { handleTaskAssigned } from '../../../services/notification.service';
 import { EventMetadata } from '../../../messaging/EventBus';
+
+const mockedLogger = jest.mocked(logger);
 
 describe('Notification Service', () => {
   const mockMetadata: EventMetadata = {
@@ -57,7 +61,6 @@ describe('Notification Service', () => {
     });
 
     it('should skip notification when no assignedTo email', async () => {
-      const logger = require('../../../utils/logger');
       const event = {
         taskId: 'task-123',
         assignedTo: '',
@@ -66,7 +69,10 @@ describe('Notification Service', () => {
       await handleTaskAssigned(event, mockMetadata);
 
       expect(mockSendTaskAssignmentEmail).not.toHaveBeenCalled();
-      expect(logger.warn).toHaveBeenCalledWith('Notification skipped - No email', expect.any(Object));
+      expect(mockedLogger.warn).toHaveBeenCalledWith(
+        'Notification skipped - No email',
+        expect.any(Object),
+      );
     });
 
     it('should use default task title when not provided', async () => {
@@ -88,7 +94,6 @@ describe('Notification Service', () => {
     });
 
     it('should log and throw error when email sending fails', async () => {
-      const logger = require('../../../utils/logger');
       const event = {
         taskId: 'task-123',
         assignedTo: 'user@example.com',
@@ -97,11 +102,10 @@ describe('Notification Service', () => {
       mockSendTaskAssignmentEmail.mockRejectedValue(new Error('SMTP error'));
 
       await expect(handleTaskAssigned(event, mockMetadata)).rejects.toThrow('SMTP error');
-      expect(logger.error).toHaveBeenCalledWith('Notification failed', expect.any(Object));
+      expect(mockedLogger.error).toHaveBeenCalledWith('Notification failed', expect.any(Object));
     });
 
     it('should log event reception info', async () => {
-      const logger = require('../../../utils/logger');
       const event = {
         taskId: 'task-123',
         assignedTo: 'user@example.com',
@@ -112,7 +116,7 @@ describe('Notification Service', () => {
 
       await handleTaskAssigned(event, mockMetadata);
 
-      expect(logger.info).toHaveBeenCalledWith(
+      expect(mockedLogger.info).toHaveBeenCalledWith(
         'Event received - task.assigned',
         expect.objectContaining({
           type: 'event_received',
