@@ -72,7 +72,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
  * Error logging middleware
  * Should be placed after all routes but before error handler
  */
-export const errorLogger = (err: Error, req: Request, res: Response, next: NextFunction) => {
+export const errorLogger = (err: Error, req: Request, _res: Response, next: NextFunction) => {
   logger.error('Unhandled Error', {
     type: 'unhandled_error',
     requestId: req.requestId,
