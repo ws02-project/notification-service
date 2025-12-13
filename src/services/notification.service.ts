@@ -9,24 +9,34 @@ export async function handleTaskAssigned(
   event: Record<string, unknown>,
   metadata: EventMetadata,
 ): Promise<void> {
+  const startTime = Date.now();
+  const taskId = event.taskId as string;
+  const assignedTo = event.assignedTo as string;
+  const projectId = event.projectId as string | undefined;
+  const assignedBy = event.assignedBy as string | undefined;
+
+  logger.info('Event received - task.assigned', {
+    type: 'event_received',
+    eventType: 'task.assigned',
+    eventId: metadata.eventId,
+    taskId,
+    assignedTo,
+    projectId,
+    sourceService: metadata.sourceService,
+  });
+
   try {
-    logger.info('📧 Processing task assignment notification', {
-      taskId: event.taskId,
-      assignedTo: event.assignedTo,
-      eventId: metadata.eventId,
-    });
-
-    const taskId = event.taskId as string;
-    const assignedTo = event.assignedTo as string;
-    const projectId = event.projectId as string | undefined;
-    const assignedBy = event.assignedBy as string | undefined;
-
     // For now, we'll use assignedTo as email
     // In a real system, you'd look up the user's email from a user service
     const assigneeEmail = assignedTo;
 
     if (!assigneeEmail) {
-      logger.warn('⚠️ No email address found for assigned user', { taskId, assignedTo });
+      logger.warn('Notification skipped - No email', {
+        type: 'notification_skipped',
+        reason: 'no_email',
+        taskId,
+        assignedTo,
+      });
       return;
     }
 
@@ -42,12 +52,24 @@ export async function handleTaskAssigned(
       assignedBy,
     });
 
-    logger.info('✅ Task assignment notification sent successfully', {
+    logger.info('Notification sent successfully', {
+      type: 'notification_sent',
+      notificationType: 'task_assignment',
       taskId,
-      assigneeEmail,
+      recipient: assigneeEmail,
+      projectId,
+      duration: Date.now() - startTime,
     });
   } catch (error) {
-    logger.error('❌ Failed to handle task assignment notification:', error);
+    logger.error('Notification failed', {
+      type: 'notification_failed',
+      notificationType: 'task_assignment',
+      taskId,
+      assignedTo,
+      projectId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      duration: Date.now() - startTime,
+    });
     throw error;
   }
 }

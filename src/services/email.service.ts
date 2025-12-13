@@ -142,14 +142,40 @@ This is an automated notification from the Task Management System.
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    logger.info(`✅ Task assignment email sent to ${assigneeEmail}`, {
+    logger.info('Email sent successfully', {
+      type: 'email_sent',
+      emailType: 'task_assignment',
+      recipient: assigneeEmail,
       messageId: info.messageId,
       taskId,
+      projectId,
     });
   } catch (error) {
-    logger.error(`❌ Failed to send task assignment email to ${assigneeEmail}:`, error);
+    logger.error('Email send failed', {
+      type: 'email_failed',
+      emailType: 'task_assignment',
+      recipient: assigneeEmail,
+      taskId,
+      projectId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      retryable: error instanceof Error ? isRetryableEmailError(error) : false,
+    });
     throw error;
   }
+}
+
+/**
+ * Check if an email error is retryable
+ */
+function isRetryableEmailError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('timeout') ||
+    message.includes('connection') ||
+    message.includes('econnrefused') ||
+    message.includes('temporarily') ||
+    message.includes('try again')
+  );
 }
 
 /**
@@ -166,9 +192,19 @@ export async function sendTestEmail(to: string, subject: string, message: string
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    logger.info(`✅ Test email sent to ${to}`, { messageId: info.messageId });
+    logger.info('Test email sent', {
+      type: 'email_sent',
+      emailType: 'test',
+      recipient: to,
+      messageId: info.messageId,
+    });
   } catch (error) {
-    logger.error(`❌ Failed to send test email to ${to}:`, error);
+    logger.error('Test email failed', {
+      type: 'email_failed',
+      emailType: 'test',
+      recipient: to,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     throw error;
   }
 }

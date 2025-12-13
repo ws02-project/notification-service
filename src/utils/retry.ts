@@ -100,7 +100,8 @@ export async function retry<T>(
       const totalDurationMs = Date.now() - startTime;
 
       if (attempt > 0) {
-        logger.info('✅ Operation succeeded after retries', {
+        logger.info('Retry succeeded', {
+          type: 'retry_success',
           attempts: attempt + 1,
           totalDurationMs,
         });
@@ -117,7 +118,8 @@ export async function retry<T>(
 
       // Check if we should retry this error
       if (config.shouldRetry && !config.shouldRetry(lastError, attempt + 1)) {
-        logger.warn('⚠️ Non-retryable error encountered', {
+        logger.warn('Non-retryable error', {
+          type: 'retry_non_retryable',
           error: lastError.message,
           attempt: attempt + 1,
         });
@@ -132,8 +134,10 @@ export async function retry<T>(
       // Check if this is the last attempt
       if (attempt === config.maxAttempts - 1) {
         const totalDurationMs = Date.now() - startTime;
-        logger.error('❌ Operation failed after all retry attempts', {
+        logger.error('Retry exhausted', {
+          type: 'retry_exhausted',
           attempts: attempt + 1,
+          maxAttempts: config.maxAttempts,
           totalDurationMs,
           error: lastError.message,
         });
@@ -159,12 +163,13 @@ export async function retry<T>(
         config.onRetry(attempt + 1, lastError, nextDelayMs);
       }
 
-      logger.warn(
-        `⚠️ Attempt ${attempt + 1}/${config.maxAttempts} failed, retrying in ${nextDelayMs}ms`,
-        {
-          error: lastError.message,
-        },
-      );
+      logger.warn('Retry attempt', {
+        type: 'retry_attempt',
+        attempt: attempt + 1,
+        maxAttempts: config.maxAttempts,
+        nextDelayMs,
+        error: lastError.message,
+      });
 
       await sleep(nextDelayMs);
     }

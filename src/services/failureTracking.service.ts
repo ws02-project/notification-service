@@ -81,12 +81,15 @@ class FailureTracker {
 
     this.failures.set(key, record);
 
-    logger.warn('📋 Failure recorded', {
+    logger.warn('Delivery failure recorded', {
+      type: 'delivery_failure',
+      eventId,
       taskId,
       recipientEmail,
       attemptCount: record.attemptCount,
       isRetryable,
       error: error.message,
+      firstFailureTime: new Date(record.firstFailureTime).toISOString(),
     });
 
     // Cleanup old records periodically
@@ -110,7 +113,8 @@ class FailureTracker {
     const key = `${taskId}:${recipientEmail}`;
     this.failures.delete(key);
 
-    logger.info('✅ Failure resolved', {
+    logger.info('Delivery failure resolved', {
+      type: 'delivery_resolved',
       taskId,
       recipientEmail,
     });
@@ -131,7 +135,8 @@ class FailureTracker {
     const permanentFailures = failures.filter((f) => !f.isRetryable).length;
 
     if (permanentFailures >= threshold) {
-      logger.warn('⛔ Recipient blocked due to high permanent failure rate', {
+      logger.warn('Recipient blocked', {
+        type: 'recipient_blocked',
         recipientEmail,
         permanentFailures,
         threshold,
@@ -176,8 +181,9 @@ class FailureTracker {
     expiredKeys.forEach((key) => this.failures.delete(key));
 
     if (expiredKeys.length > 0) {
-      logger.info('🧹 Cleaned up old failure records', {
-        count: expiredKeys.length,
+      logger.info('Failure records cleanup', {
+        type: 'failure_cleanup',
+        cleanedCount: expiredKeys.length,
       });
     }
   }
@@ -186,8 +192,12 @@ class FailureTracker {
    * Clear all tracked failures
    */
   clear(): void {
+    const count = this.failures.size;
     this.failures.clear();
-    logger.info('🗑️ All failure records cleared');
+    logger.info('Failure records cleared', {
+      type: 'failure_records_cleared',
+      clearedCount: count,
+    });
   }
 }
 
