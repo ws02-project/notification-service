@@ -1,11 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":automergeMinor", ":automergePatch"],
+  "extends": ["config:recommended"],
   "labels": ["dependencies"],
   "packageRules": [
     {
-      "description": "Automerge minor and patch updates",
-      "matchUpdateTypes": ["minor", "patch"],
+      "description": "Automerge all updates (minor, patch, and major)",
+      "matchUpdateTypes": ["minor", "patch", "major"],
       "automerge": true,
       "automergeType": "pr"
     },
@@ -16,13 +16,8 @@
       "groupSlug": "all-minor-patch"
     },
     {
-      "description": "Do not automerge major updates",
-      "matchUpdateTypes": ["major"],
-      "automerge": false
-    },
-    {
       "description": "Do not automerge Express - requires manual testing",
-      "matchPackageNames": ["express"],
+      "matchPackageNames": ["express", "@types/express"],
       "automerge": false,
       "labels": ["dependencies", "express", "manual-review"]
     },
