@@ -1,37 +1,74 @@
-name: Service CI/CD
-
-# Generic workflow template for any microservice repository
-# Place this file in: <service-name>/.github/workflows/ci.yml
-# Update the IMAGE_NAME env variable to match your service name
+name: Notification Service CI/CD
 
 on:
   push:
-    branches: [ main, master, develop ]
-    tags:
-      - 'v*'
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   repository_dispatch:
-    types: [proto-updated]  # Triggered when proto repository changes
+    types: [proto-updated]
 
 env:
   AWS_REGION: ap-southeast-1
   ECR_REGISTRY: 158670175038.dkr.ecr.ap-southeast-1.amazonaws.com
   ECR_REPOSITORY: docker
-  IMAGE_NAME: notification  # Update this to match your service name (e.g., task, project, user, notification)
+  SERVICE_NAME: notification-service
 
 permissions:
   id-token: write # Required for OIDC authentication
-  contents: read # Required to checkout code
+  contents: write # Required to create tags and releases
 
 jobs:
+  # ============================================
+  # Automatic Semantic Versioning
+  # ============================================
+  semantic-version:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    outputs:
+      new_tag: ${{ steps.tag.outputs.new_tag }}
+      new_version: ${{ steps.tag.outputs.new_version }}
+      changelog: ${{ steps.tag.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and push tag
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: master,main
+
+      - name: Create GitHub Release
+        if: steps.tag.outputs.new_tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          name: ${{ steps.tag.outputs.new_tag }}
+          body: ${{ steps.tag.outputs.changelog }}
+          generate_release_notes: true
+
+      - name: Release Output
+        if: steps.tag.outputs.new_tag
+        run: |
+          echo "## 🎉 Release Created!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.tag.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.tag.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # Test Job
+  # ============================================
   test:
     runs-on: ubuntu-latest
     name: Run Tests
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -39,7 +76,7 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 24.x
           cache: 'pnpm'
@@ -63,11 +100,17 @@ jobs:
           name: notification-service-coverage
           fail_ci_if_error: false
 
+  # ============================================
+  # Build and Push Docker Image
+  # ============================================
   build-and-push:
     runs-on: ubuntu-latest
     name: Build and Push Docker Image
-    needs: test
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || github.event_name == 'repository_dispatch'
+    needs: [test, semantic-version]
+    if: |
+      always() &&
+      needs.test.result == 'success' &&
+      (needs.semantic-version.result == 'success' || needs.semantic-version.result == 'skipped')
 
     steps:
       - name: Display trigger information
@@ -87,28 +130,15 @@ jobs:
           echo "🔄 Rebuilding service due to proto file changes..."
 
       - name: Checkout code
-        uses: actions/checkout@v6
-      
+        uses: actions/checkout@v4
+
       - name: Checkout proto repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: ws02-project/proto
           path: proto
           token: ${{ secrets.PAT_TOKEN }}
-      
-      - name: Copy proto files to service directory
-        run: |
-          echo "📋 Ensuring proto files are in service directory..."
-          # Proto is checked out to 'proto' directory at workspace root
-          # We need to ensure it's available in the build context
-          if [ -d "proto" ] && [ "$(ls -A proto 2>/dev/null)" ]; then
-            echo "✅ Proto files found at workspace root"
-            ls -la proto/
-          else
-            echo "⚠️  Proto directory not found or empty"
-            mkdir -p proto
-          fi
-      
+
       - name: Debug - Check AWS_ROLE_ARN variable
         run: |
           echo "AWS_ROLE_ARN value: ${{ vars.AWS_ROLE_ARN }}"
@@ -120,28 +150,38 @@ jobs:
             echo "Value: arn:aws:iam::158670175038:role/registry-github-actions-role"
             exit 1
           fi
-      
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      
+
       - name: Set image tag
         id: meta
         run: |
-          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/v') }}" == "true" ]]; then
-            IMAGE_TAG=${GITHUB_REF#refs/tags/v}
+          if [[ -n "${{ needs.semantic-version.outputs.new_tag }}" ]]; then
+            IMAGE_TAG="${{ needs.semantic-version.outputs.new_tag }}"
+            IS_RELEASE="true"
+          elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            IMAGE_TAG="proto-${GITHUB_SHA::8}"
+            IS_RELEASE="false"
           else
-            IMAGE_TAG=${GITHUB_SHA::8}
+            IMAGE_TAG="dev-${GITHUB_SHA::8}"
+            IS_RELEASE="false"
           fi
+
           echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "image_latest=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-latest" >> $GITHUB_OUTPUT
+          echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
+          echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_latest=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.SERVICE_NAME }}-latest" >> $GITHUB_OUTPUT
+
+          echo "## 🏷️ Image Tag: \`$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "Release: $IS_RELEASE" >> $GITHUB_STEP_SUMMARY
 
       - name: Install dependencies for Trivy scan
         run: |
@@ -156,7 +196,7 @@ jobs:
           scan-ref: '.'
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'  # Don't fail on filesystem scan, just report
+          exit-code: '0'
 
       - name: Build Docker image
         env:
@@ -165,28 +205,27 @@ jobs:
           echo "Building Docker image: $IMAGE_NAME"
           docker build -t $IMAGE_NAME -f Dockerfile .
           docker tag $IMAGE_NAME ${{ steps.meta.outputs.image_latest }}
-          # Also tag with a simple local name for Trivy scanning
-          docker tag $IMAGE_NAME notification-service:scan
+          docker tag $IMAGE_NAME ${{ env.SERVICE_NAME }}:scan
 
       - name: Run Trivy image scan (Table output - Show all vulnerabilities)
         uses: aquasecurity/trivy-action@master
-        continue-on-error: true # Show results even if vulnerabilities found
+        continue-on-error: true
         with:
           scan-type: 'image'
-          image-ref: 'notification-service:scan'
+          image-ref: '${{ env.SERVICE_NAME }}:scan'
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
-          exit-code: '0' # Don't fail here, just show results
+          exit-code: '0'
 
       - name: Run Trivy image scan (Fail on CRITICAL/HIGH)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'image'
-          image-ref: 'notification-service:scan'
+          image-ref: '${{ env.SERVICE_NAME }}:scan'
           format: 'table'
           severity: 'CRITICAL,HIGH'
-          exit-code: '1'  # Fail pipeline if CRITICAL or HIGH vulnerabilities found
-      
+          exit-code: '1'
+
       - name: Push Docker image to ECR
         env:
           IMAGE_NAME: ${{ steps.meta.outputs.image }}
@@ -195,29 +234,27 @@ jobs:
           echo "Pushing Docker image: $IMAGE_NAME"
           docker push $IMAGE_NAME
           docker push $IMAGE_LATEST
-      
+
       - name: Image details
         run: |
-          echo "✅ Successfully pushed image:"
+          echo "✅ Successfully pushed Notification Service image:"
           echo "  Image: ${{ steps.meta.outputs.image }}"
           echo "  Latest: ${{ steps.meta.outputs.image_latest }}"
 
       - name: Get commit message
         id: commit
         run: |
-          # Check if this is a merge commit
           PARENT_COUNT=$(git cat-file -p HEAD | grep -c "^parent")
           if [ "$PARENT_COUNT" -gt 1 ]; then
-            # For merge commits, get the title from the merged branch's last commit
             COMMIT_MSG=$(git log -1 --pretty=%s HEAD^2 2>/dev/null || git log -1 --pretty=%s)
           else
             COMMIT_MSG=$(git log -1 --pretty=%s)
           fi
-          # Truncate long messages
           COMMIT_MSG=$(echo "$COMMIT_MSG" | head -c 100)
           echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
 
       - name: Trigger deployment update
+        if: github.event_name == 'push' || github.event_name == 'repository_dispatch'
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
@@ -229,5 +266,7 @@ jobs:
               "image_tag": "${{ steps.meta.outputs.tag }}",
               "image_full": "${{ steps.meta.outputs.image }}",
               "commit_sha": "${{ github.sha }}",
-              "commit_message": "${{ steps.commit.outputs.message }}"
+              "commit_message": "${{ steps.commit.outputs.message }}",
+              "version": "${{ needs.semantic-version.outputs.new_version || 'dev' }}",
+              "is_release": ${{ steps.meta.outputs.is_release }}
             }
