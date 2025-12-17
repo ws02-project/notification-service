@@ -108,14 +108,16 @@ jobs:
       - name: Set image tag
         id: meta
         run: |
+          # Use service-prefixed tags to avoid collisions in shared ECR repo
           if [[ -n "${{ steps.version.outputs.new_tag }}" ]]; then
-            IMAGE_TAG="${{ steps.version.outputs.new_tag }}"
+            VERSION_TAG="${{ steps.version.outputs.new_tag }}"
+            IMAGE_TAG="${{ env.SERVICE_NAME }}-${VERSION_TAG}"
             IS_RELEASE="true"
           elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-            IMAGE_TAG="proto-${GITHUB_SHA::8}"
+            IMAGE_TAG="${{ env.SERVICE_NAME }}-proto-${GITHUB_SHA::8}"
             IS_RELEASE="false"
           else
-            IMAGE_TAG="dev-${GITHUB_SHA::8}"
+            IMAGE_TAG="${{ env.SERVICE_NAME }}-dev-${GITHUB_SHA::8}"
             IS_RELEASE="false"
           fi
 
