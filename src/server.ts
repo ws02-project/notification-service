@@ -16,16 +16,20 @@ const startServer = async () => {
       logger.warn('⚠️ Email configuration is invalid. Email notifications may not work.');
     }
 
-    // Initialize EventBus messaging system
-    await initializeMessaging();
-    logger.info('✅ EventBus messaging initialized successfully');
+    // Initialize EventBus messaging system (optional)
+    try {
+      await initializeMessaging();
+      logger.info('✅ EventBus messaging initialized successfully');
+    } catch (messagingError) {
+      logger.warn('⚠️  RabbitMQ connection failed - continuing without messaging');
+      logger.warn('Messaging error:', messagingError);
+    }
 
     // Start HTTP server
     server = app.listen(config.port, () => {
       logger.info(`🚀 ${config.serviceName} is running on port ${config.port}`);
       logger.info(`📝 Environment: ${config.env}`);
       logger.info(`🔗 API: http://localhost:${config.port}/api/${config.apiVersion}`);
-      logger.info(`🐰 RabbitMQ: Connected`);
       logger.info(`📧 Email: ${emailConfigValid ? 'Configured' : 'Not configured'}`);
     });
   } catch (error) {
