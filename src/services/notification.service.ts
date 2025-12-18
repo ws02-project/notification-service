@@ -1,6 +1,7 @@
 import logger from '../utils/logger';
 import { sendTaskAssignmentEmail } from './email.service';
 import { EventMetadata } from '../messaging/EventBus';
+import { getUserEmail } from '../grpc/user.grpc.client';
 
 /**
  * Handle task assigned event
@@ -26,16 +27,15 @@ export async function handleTaskAssigned(
   });
 
   try {
-    // For now, we'll use assignedTo as email
-    // In a real system, you'd look up the user's email from a user service
-    const assigneeEmail = assignedTo;
+    // Get the user's email from user-service via gRPC
+    const assigneeEmail = await getUserEmail(assignedTo);
 
     if (!assigneeEmail) {
-      logger.warn('Notification skipped - No email', {
+      logger.warn('Notification skipped - No email found for user', {
         type: 'notification_skipped',
         reason: 'no_email',
         taskId,
-        assignedTo,
+        userId: assignedTo,
       });
       return;
     }

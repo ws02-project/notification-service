@@ -34,6 +34,9 @@ export const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   },
+  grpc: {
+    userServiceUrl: process.env.USER_SERVICE_GRPC_URL || 'user-service:50053',
+  },
 };
 
 export const isProduction = config.env === 'production';
