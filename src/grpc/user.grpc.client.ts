@@ -149,4 +149,3 @@ export const getUserEmail = async (userId: string): Promise<string | null> => {
     return null;
   }
 };
-
