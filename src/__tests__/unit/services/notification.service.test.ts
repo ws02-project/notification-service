@@ -15,6 +15,12 @@ jest.mock('../../../services/email.service', () => ({
   sendTestEmail: jest.fn(),
 }));
 
+// Mock the gRPC user client
+const mockGetUserEmail = jest.fn();
+jest.mock('../../../grpc/user.grpc.client', () => ({
+  getUserEmail: mockGetUserEmail,
+}));
+
 import { handleTaskAssigned } from '../../../services/notification.service';
 import { EventMetadata } from '../../../messaging/EventBus';
 
@@ -37,17 +43,20 @@ describe('Notification Service', () => {
     it('should send email when task is assigned', async () => {
       const event = {
         taskId: 'task-123',
-        assignedTo: 'user@example.com',
+        assignedTo: 'user-uuid-123',
         projectId: 'project-123',
         assignedBy: 'manager@example.com',
         title: 'Test Task',
         description: 'Test Description',
       };
 
+      // Mock gRPC to return user email
+      mockGetUserEmail.mockResolvedValue('user@example.com');
       mockSendTaskAssignmentEmail.mockResolvedValue(undefined);
 
       await handleTaskAssigned(event, mockMetadata);
 
+      expect(mockGetUserEmail).toHaveBeenCalledWith('user-uuid-123');
       expect(mockSendTaskAssignmentEmail).toHaveBeenCalledWith(
         'user@example.com',
         expect.objectContaining({
@@ -60,7 +69,7 @@ describe('Notification Service', () => {
       );
     });
 
-    it('should skip notification when no assignedTo email', async () => {
+    it('should skip notification when no assignedTo provided', async () => {
       const event = {
         taskId: 'task-123',
         assignedTo: '',
@@ -68,9 +77,29 @@ describe('Notification Service', () => {
 
       await handleTaskAssigned(event, mockMetadata);
 
+      expect(mockGetUserEmail).not.toHaveBeenCalled();
       expect(mockSendTaskAssignmentEmail).not.toHaveBeenCalled();
       expect(mockedLogger.warn).toHaveBeenCalledWith(
-        'Notification skipped - No email',
+        'Notification skipped - No assignee',
+        expect.any(Object),
+      );
+    });
+
+    it('should skip notification when user email not found', async () => {
+      const event = {
+        taskId: 'task-123',
+        assignedTo: 'user-uuid-123',
+      };
+
+      // Mock gRPC to return null (user not found)
+      mockGetUserEmail.mockResolvedValue(null);
+
+      await handleTaskAssigned(event, mockMetadata);
+
+      expect(mockGetUserEmail).toHaveBeenCalledWith('user-uuid-123');
+      expect(mockSendTaskAssignmentEmail).not.toHaveBeenCalled();
+      expect(mockedLogger.warn).toHaveBeenCalledWith(
+        'Notification skipped - No email found for user',
         expect.any(Object),
       );
     });
@@ -78,9 +107,10 @@ describe('Notification Service', () => {
     it('should use default task title when not provided', async () => {
       const event = {
         taskId: 'task-123',
-        assignedTo: 'user@example.com',
+        assignedTo: 'user-uuid-123',
       };
 
+      mockGetUserEmail.mockResolvedValue('user@example.com');
       mockSendTaskAssignmentEmail.mockResolvedValue(undefined);
 
       await handleTaskAssigned(event, mockMetadata);
@@ -96,9 +126,10 @@ describe('Notification Service', () => {
     it('should log and throw error when email sending fails', async () => {
       const event = {
         taskId: 'task-123',
-        assignedTo: 'user@example.com',
+        assignedTo: 'user-uuid-123',
       };
 
+      mockGetUserEmail.mockResolvedValue('user@example.com');
       mockSendTaskAssignmentEmail.mockRejectedValue(new Error('SMTP error'));
 
       await expect(handleTaskAssigned(event, mockMetadata)).rejects.toThrow('SMTP error');
@@ -108,10 +139,11 @@ describe('Notification Service', () => {
     it('should log event reception info', async () => {
       const event = {
         taskId: 'task-123',
-        assignedTo: 'user@example.com',
+        assignedTo: 'user-uuid-123',
         projectId: 'project-456',
       };
 
+      mockGetUserEmail.mockResolvedValue('user@example.com');
       mockSendTaskAssignmentEmail.mockResolvedValue(undefined);
 
       await handleTaskAssigned(event, mockMetadata);
@@ -129,10 +161,11 @@ describe('Notification Service', () => {
     it('should handle taskDescription being undefined', async () => {
       const event = {
         taskId: 'task-123',
-        assignedTo: 'user@example.com',
+        assignedTo: 'user-uuid-123',
         title: 'Task Without Description',
       };
 
+      mockGetUserEmail.mockResolvedValue('user@example.com');
       mockSendTaskAssignmentEmail.mockResolvedValue(undefined);
 
       await handleTaskAssigned(event, mockMetadata);

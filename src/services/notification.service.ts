@@ -26,6 +26,16 @@ export async function handleTaskAssigned(
     sourceService: metadata.sourceService,
   });
 
+  // Check if assignedTo is provided
+  if (!assignedTo) {
+    logger.warn('Notification skipped - No assignee', {
+      type: 'notification_skipped',
+      reason: 'no_assignee',
+      taskId,
+    });
+    return;
+  }
+
   try {
     // Get the user's email from user-service via gRPC
     const assigneeEmail = await getUserEmail(assignedTo);
