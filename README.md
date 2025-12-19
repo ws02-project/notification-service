@@ -4,20 +4,22 @@ Microservice for sending notifications via email with RabbitMQ event consumption
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|------------|
-| Runtime | Node.js 24 LTS |
-| Language | TypeScript |
-| Framework | Express.js |
-| Email | Nodemailer |
-| Messaging | RabbitMQ |
-| Validation | Joi |
-| Testing | Jest + Supertest |
+## Tech Stack
+
+| Category   | Technology       |
+| ---------- | ---------------- |
+| Runtime    | Node.js 24 LTS   |
+| Language   | TypeScript       |
+| Framework  | Express.js       |
+| Email      | Nodemailer       |
+| Messaging  | RabbitMQ         |
+| Validation | Joi              |
+| Testing    | Jest + Supertest |
 
 ## Ports
 
-| Service | Port |
-|---------|------|
+| Service  | Port |
+| -------- | ---- |
 | HTTP API | 3003 |
 
 ## Quick Start
@@ -42,18 +44,18 @@ pnpm dev:local
 
 ### REST API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/health` | Health check |
-| POST | `/api/v1/test-email` | Send test email |
+| Method | Endpoint             | Description     |
+| ------ | -------------------- | --------------- |
+| GET    | `/api/v1/health`     | Health check    |
+| POST   | `/api/v1/test-email` | Send test email |
 
 ## Events Consumed
 
-| Event | Source | Action |
-|-------|--------|--------|
-| `task.assigned` | Task Service | Send assignment email |
-| `user.created` | User Service | Send welcome email |
-| `project.member.added` | Project Service | Send invite email |
+| Event                  | Source          | Action                |
+| ---------------------- | --------------- | --------------------- |
+| `task.assigned`        | Task Service    | Send assignment email |
+| `user.created`         | User Service    | Send welcome email    |
+| `project.member.added` | Project Service | Send invite email     |
 
 ## Environment Variables
 
@@ -93,26 +95,28 @@ src/
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start with Docker |
+| Command          | Description                   |
+| ---------------- | ----------------------------- |
+| `pnpm dev`       | Start with Docker             |
 | `pnpm dev:local` | Start locally with hot reload |
-| `pnpm build` | Build TypeScript |
-| `pnpm start` | Start production |
-| `pnpm test` | Run tests |
-| `pnpm lint` | Lint code |
+| `pnpm build`     | Build TypeScript              |
+| `pnpm start`     | Start production              |
+| `pnpm test`      | Run tests                     |
+| `pnpm lint`      | Lint code                     |
 
 ## Features
 
 ### Retry Mechanism
 
 Failed email deliveries are automatically retried with exponential backoff:
+
 - Max retries: 3
 - Backoff: 1s, 2s, 4s
 
 ### Failure Tracking
 
 Failed notifications are tracked and can be monitored for:
+
 - Bounce detection
 - Rate limiting
 - Error patterns
